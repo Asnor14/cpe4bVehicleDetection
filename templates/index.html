@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vehicle Warning Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="page">
+        <h1 class="page-title">Vehicle Warning Dashboard</h1>
+        <p class="page-subtitle">
+            Each panel keeps its own confidence level. When a vehicle is detected, the warning stays active for
+            {{ warning_seconds }} seconds and resets back to {{ warning_seconds }} if another qualifying detection appears.
+        </p>
+
+        <section class="panel-grid">
+            {% for device in devices %}
+            <article class="panel-card" data-device-id="{{ device.id }}">
+                <header class="panel-header">{{ device.name }}</header>
+
+                <div class="video-shell">
+                    <img
+                        class="video-feed"
+                        src="{{ url_for('video_feed', device_id=device.id) }}"
+                        alt="{{ device.name }} live preview"
+                    >
+                </div>
+
+                <div class="alert-block">
+                    <p class="alert-label" id="alert-{{ device.id }}">No Vehicle Detected</p>
+                    <p class="countdown-label" id="countdown-{{ device.id }}">0.0s</p>
+                    <p class="details-label" id="details-{{ device.id }}">{{ device.status_message }}</p>
+                    <p class="error-label" id="error-{{ device.id }}">{{ device.last_error }}</p>
+                </div>
+
+                <div class="control-row">
+                    <form class="threshold-form" data-device-id="{{ device.id }}">
+                        <label class="sr-only" for="threshold-{{ device.id }}">Confidence threshold</label>
+                        <input
+                            id="threshold-{{ device.id }}"
+                            class="threshold-input"
+                            type="number"
+                            min="0.01"
+                            max="1.00"
+                            step="0.01"
+                            value="{{ '%.2f'|format(device.threshold) }}"
+                        >
+                        <button type="submit" class="action-button">Edit Confidence Level</button>
+                    </form>
+
+                    <button
+                        type="button"
+                        class="refresh-button"
+                        data-refresh-id="{{ device.id }}"
+                        aria-label="Refresh {{ device.name }}"
+                        title="Refresh {{ device.name }}"
+                    >
+                        Refresh
+                    </button>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+    </main>
+
+    <script>
+        async function fetchStatus() {
+            try {
+                const response = await fetch("/api/status", { cache: "no-store" });
+                const payload = await response.json();
+
+                Object.values(payload.devices).forEach((device) => {
+                    const alertLabel = document.getElementById(`alert-${device.id}`);
+                    const countdownLabel = document.getElementById(`countdown-${device.id}`);
+                    const detailsLabel = document.getElementById(`details-${device.id}`);
+                    const errorLabel = document.getElementById(`error-${device.id}`);
+                    const thresholdInput = document.getElementById(`threshold-${device.id}`);
+
+                    if (device.warning_active) {
+                        alertLabel.textContent = "Vehicle Detected";
+                        alertLabel.classList.add("active");
+                        countdownLabel.textContent = `${device.countdown_seconds.toFixed(1)}s`;
+                    } else {
+                        alertLabel.textContent = "No Vehicle Detected";
+                        alertLabel.classList.remove("active");
+                        countdownLabel.textContent = "0.0s";
+                    }
+
+                    if (device.warning_active) {
+                        detailsLabel.textContent = `${device.status_message} | Confidence: ${device.last_detection_confidence.toFixed(2)}`;
+                    } else {
+                        detailsLabel.textContent = device.status_message;
+                    }
+                    errorLabel.textContent = device.last_error || "";
+
+                    if (document.activeElement !== thresholdInput) {
+                        thresholdInput.value = Number(device.threshold).toFixed(2);
+                    }
+                });
+            } catch (error) {
+                console.error("Failed to load status:", error);
+            }
+        }
+
+        document.querySelectorAll(".threshold-form").forEach((form) => {
+            form.addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const deviceId = form.dataset.deviceId;
+                const input = document.getElementById(`threshold-${deviceId}`);
+                const value = input.value;
+
+                const response = await fetch(`/api/device/${deviceId}/threshold`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ threshold: value }),
+                });
+
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    alert(payload.message || "Failed to update confidence level.");
+                    return;
+                }
+
+                input.value = Number(payload.threshold).toFixed(2);
+                fetchStatus();
+            });
+        });
+
+        document.querySelectorAll("[data-refresh-id]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const deviceId = button.dataset.refreshId;
+
+                await fetch(`/api/device/${deviceId}/refresh`, {
+                    method: "POST",
+                });
+
+                fetchStatus();
+            });
+        });
+
+        fetchStatus();
+        setInterval(fetchStatus, 500);
+    </script>
+</body>
+</html>

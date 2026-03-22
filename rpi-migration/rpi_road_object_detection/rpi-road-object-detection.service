@@ -1,0 +1,18 @@
+[Unit]
+Description=Raspberry Pi Road Object Detection
+After=display-manager.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=raspi
+WorkingDirectory=/home/raspi/Downloads/rpi-migration/rpi_road_object_detection
+ExecStart=/home/raspi/Downloads/rpi-migration/rpi_road_object_detection/start_on_boot.sh
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/raspi/.Xauthority
+
+[Install]
+WantedBy=graphical.target

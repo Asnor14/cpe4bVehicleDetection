@@ -1,0 +1,4 @@
+ultralytics
+opencv-python
+numpy
+# Install torch separately on Raspberry Pi using a wheel that matches your OS/Python.

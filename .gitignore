@@ -5,8 +5,10 @@ __pycache__/
 .venv/
 venv/
 env/
+.runtime-venv/
 
 .idea/
 .vscode/
 
 runs/
+*.log

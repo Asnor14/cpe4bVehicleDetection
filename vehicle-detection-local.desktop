@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Vehicle Detection Local Preview
+Comment=Start the local Raspberry Pi vehicle detection preview
+Exec=__PROJECT_DIR__/start_local_preview.sh
+Path=__PROJECT_DIR__
+Terminal=false
+X-GNOME-Autostart-enabled=true

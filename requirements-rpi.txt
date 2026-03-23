@@ -1,4 +1,5 @@
 -r requirements.txt
+RPi.GPIO
 
 # Keep torch separate on Raspberry Pi because the correct wheel can vary by
 # Raspberry Pi OS image, Python version, and CPU architecture.

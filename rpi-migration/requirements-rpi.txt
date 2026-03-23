@@ -1,4 +1,5 @@
 ultralytics
 opencv-python
 numpy
+RPi.GPIO
 # Install torch separately on Raspberry Pi using a wheel that matches your OS/Python.
